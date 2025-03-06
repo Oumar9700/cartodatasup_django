@@ -23,7 +23,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 #for Api
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import InstitutionViewSet, FormationViewSet, CandidatureViewSet
+from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureViewSet
 
 
 router = DefaultRouter()
