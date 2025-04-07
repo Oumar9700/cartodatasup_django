@@ -29,7 +29,7 @@ class Command(BaseCommand):
                             "region": row["Région de l’établissement"],
                             "academy": row["Académie de l’établissement"],
                             "commune": row["Commune de l’établissement"],
-                            "is_public": row["Statut de l’établissement de la filière de formation (public, privé…)"] == "Public"
+                            "status": row["Statut de l’établissement de la filière de formation (public, privé…)"]
                         }
                     )
 

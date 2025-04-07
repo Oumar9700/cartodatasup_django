@@ -9,7 +9,7 @@ class Institution(models.Model):
     region = models.CharField(max_length=100)
     academy = models.CharField(max_length=100)
     commune = models.CharField(max_length=100)
-    is_public = models.BooleanField(default=True)
+    status = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name

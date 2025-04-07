@@ -3,11 +3,29 @@ from rest_framework import serializers
 from .models import Institution, Formation, Candidature
 from django.contrib.auth.models import User
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Count
+
+# class InstitutionStatusSerializer(serializers.ModelSerializer):
+
+#     formations_number = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Institution
+#         fields = '__all__'
+
+#     def get_formations_number(self, obj):
+#         return obj.formations.count()
 
 class InstitutionSerializer(serializers.ModelSerializer):
+
+    formations_number = serializers.SerializerMethodField()
+
     class Meta:
         model = Institution
         fields = '__all__'
+
 
 class FormationSerializer(serializers.ModelSerializer):
     institution = InstitutionSerializer()

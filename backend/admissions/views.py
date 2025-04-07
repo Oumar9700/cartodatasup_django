@@ -15,6 +15,25 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import logout
 
+
+from django.db.models import Count, Sum, Q
+from rest_framework.decorators import api_view
+
+class FormationParStatutView(APIView):
+    def get(self, request):
+        data = (
+            Formation.objects
+            .values('institution__status')
+            .annotate(nombre=Count('id'))
+        )
+        # Formatage clair
+        result = {
+            entry['institution__status']: entry['nombre']
+            for entry in data
+        }
+        return Response(result)
+
+#Get all formations, institutions and candidatures
 class InstitutionViewSet(viewsets.ModelViewSet):
     queryset = Institution.objects.all()
     serializer_class = InstitutionSerializer
@@ -26,7 +45,10 @@ class FormationViewSet(viewsets.ModelViewSet):
 class CandidatureViewSet(viewsets.ModelViewSet):
     queryset = Candidature.objects.all()
     serializer_class = CandidatureSerializer
+#Get all formations, institutions and candidatures
 
+
+# Authentication
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
@@ -61,3 +83,53 @@ class LogoutView(APIView):
             return Response({"message": "Déconnexion réussie"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+# Authentication
+
+
+
+
+@api_view(['GET'])
+def stats_par_statut_etablissement(request):
+    # Récupération des filtres depuis la query string
+    commune = request.GET.get('commune')
+    academie = request.GET.get('academie')
+
+    # Filtrage des institutions si filtre présent
+    institutions = Institution.objects.all()
+    if commune:
+        institutions = institutions.filter(commune=commune)
+    if academie:
+        institutions = institutions.filter(academy=academie)
+
+    # Agrégation par statut
+    data = institutions.values('status').annotate(
+        nombre_formations=Count('formations', distinct=True),
+
+        #number of formations selective with True
+        nombre_formations_selectives=Count('formations', filter=Q(formations__is_selective=True), distinct=True),
+        nombre_formations_non_selectives=Count('formations', filter=Q(formations__is_selective=False), distinct=True),
+
+        total_candidatures=Count('formations__candidatures__total_candidates'),
+        total_females=Sum('formations__candidatures__female_candidates'),
+        
+        total_admis=Sum('formations__candidatures__admitted_total'),
+        total_boursiers=Sum('formations__candidatures__boursier_candidates'),
+
+        total_neo_bac_general=Sum('formations__candidatures__neo_bac_general'),
+        neo_bac_techno=Sum('formations__candidatures__neo_bac_techno'),
+        neo_bac_pro=Sum('formations__candidatures__neo_bac_pro'),
+
+        admitted_females=Sum('formations__candidatures__admitted_females'),
+        admitted_boursiers=Sum('formations__candidatures__admitted_boursiers'),
+
+        admitted_neo_bac_general=Sum('formations__candidatures__admitted_neo_bac_general'),
+        admitted_neo_bac_pro=Sum('formations__candidatures__admitted_neo_bac_pro'),
+        admitted_neo_bac_techno=Sum('formations__candidatures__admitted_neo_bac_techno'),
+
+        mention_ab=Sum('formations__candidatures__mention_ab'),
+        mention_none=Sum('formations__candidatures__mention_none'),
+
+
+    )
+
+    return Response(data)
