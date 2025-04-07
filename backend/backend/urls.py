@@ -27,6 +27,8 @@ from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureVi
 
 from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView
 from admissions.views import stats_par_statut_etablissement
+from admissions.views import AFormationParStatutView
+
 
 router = DefaultRouter()
 router.register(r'institutions', InstitutionViewSet)
@@ -50,6 +52,7 @@ urlpatterns = [
 
     path('api/stats-status_etablissement/', stats_par_statut_etablissement),
     path('api/formations/status/', FormationParStatutView.as_view(), name='formations-par-statut'),
+    path('api/stats-etablissement/', AFormationParStatutView.as_view()),
 
     path('api/', include(router.urls)),
 ]

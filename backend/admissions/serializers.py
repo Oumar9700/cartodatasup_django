@@ -26,6 +26,9 @@ class InstitutionSerializer(serializers.ModelSerializer):
         model = Institution
         fields = '__all__'
 
+    def get_formations_number(self, obj):
+        return obj.formations.count()
+
 
 class FormationSerializer(serializers.ModelSerializer):
     institution = InstitutionSerializer()

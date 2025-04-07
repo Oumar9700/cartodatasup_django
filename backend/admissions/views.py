@@ -15,9 +15,9 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import logout
 
-
 from django.db.models import Count, Sum, Q
 from rest_framework.decorators import api_view
+
 
 class FormationParStatutView(APIView):
     def get(self, request):
@@ -32,6 +32,24 @@ class FormationParStatutView(APIView):
             for entry in data
         }
         return Response(result)
+
+class AFormationParStatutView(APIView):
+    def get(self, request):
+        commune = request.GET.get('commune')
+        academie = request.GET.get('academie')
+
+        institutions = Institution.objects.all()
+        if commune:
+            institutions = institutions.filter(commune=commune)
+        if academie:
+            institutions = institutions.filter(academy=academie)
+
+        data = institutions.values('status').annotate(
+            nombre_formations=Count('formations', distinct=True),
+            total_candidatures=Sum('formations__candidatures__total_candidates'),
+            total_femmes=Sum('formations__candidatures__female_candidates')
+        )
+        return Response(data)
 
 #Get all formations, institutions and candidatures
 class InstitutionViewSet(viewsets.ModelViewSet):
@@ -62,14 +80,28 @@ class LoginView(APIView):
         password = request.data.get('password')
 
         user = authenticate(username=username, password=password)
+
+        user = authenticate(username=username, password=password)
         if user:
             refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
-        return Response({"error": "Identifiants invalides"}, status=status.HTTP_401_UNAUTHORIZED)
 
+            return Response({
+                "data": {
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        # ajoute d'autres champs si besoin
+                    },
+                    "token": str(refresh.access_token),
+                    "refreshToken": str(refresh)
+                }
+            })
+
+        return Response(
+            {"error": "Identifiants invalides"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
 class LogoutView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
