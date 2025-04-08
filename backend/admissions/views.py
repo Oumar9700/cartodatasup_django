@@ -123,15 +123,38 @@ class LogoutView(APIView):
 @api_view(['GET'])
 def stats_par_statut_etablissement(request):
     # Récupération des filtres depuis la query string
-    commune = request.GET.get('commune')
-    academie = request.GET.get('academie')
+    annee = request.GET.get('annee')
+    academy = request.GET.get('academy')
+    departement = request.GET.get('departement')
+    region = request.GET.get('region')
+    status_institution = request.GET.get('status_institution')
+    etablissement = request.GET.get('etablissement')
+    formation_selectivity = request.GET.get('formation_selectivity')
+    formation = request.GET.get('formation')
 
     # Filtrage des institutions si filtre présent
     institutions = Institution.objects.all()
-    if commune:
-        institutions = institutions.filter(commune=commune)
-    if academie:
-        institutions = institutions.filter(academy=academie)
+
+    if annee:
+        institutions = institutions.filter(formations__candidatures__session_year=annee)
+    if academy:
+        institutions = institutions.filter(academy=academy)
+    if departement:
+        institutions = institutions.filter(department_name=departement)
+    if region:
+        institutions = institutions.filter(region=region)
+    if status_institution:
+        institutions = institutions.filter(status=status_institution)
+    if etablissement:
+        institutions = institutions.filter(name=etablissement)
+    if formation_selectivity:
+        if formation_selectivity == "true":
+            formation_selectivity = True
+        elif formation_selectivity == "false":  
+            formation_selectivity = False
+        institutions = institutions.filter(formations__is_selective=formation_selectivity)
+    if formation:
+        institutions = institutions.filter(formations__name=formation)
 
     # Agrégation par statut
     data = institutions.values('status').annotate(
@@ -174,7 +197,10 @@ def get_filter_options(request):
     academy = request.GET.get('academy')
     departement = request.GET.get('departement')
     region = request.GET.get('region')
+    status_institution = request.GET.get('status_institution')
     etablissement = request.GET.get('etablissement')
+    formation_selectivity = request.GET.get('formation_selectivity')
+    formation = request.GET.get('formation')
 
     institutions = Institution.objects.all()
     candidatures = Candidature.objects.all()
@@ -187,8 +213,19 @@ def get_filter_options(request):
         institutions = institutions.filter(department_name=departement)
     if region:
         institutions = institutions.filter(region=region)
+    if status_institution:
+        institutions = institutions.filter(status=status_institution)
     if etablissement:
         institutions = institutions.filter(name=etablissement)
+    if formation_selectivity:
+        if formation_selectivity == "true":
+            formation_selectivity = True
+        elif formation_selectivity == "false":  
+            formation_selectivity = False
+        institutions = institutions.filter(formations__is_selective=formation_selectivity)
+    if formation:
+        institutions = institutions.filter(formations__name=formation)
+        
     # Agrégation par statut
     # institutions = institutions.values('status').annotate(
     #     nombre_formations=Count('formations', distinct=True), 
@@ -199,6 +236,9 @@ def get_filter_options(request):
         "departements": list(institutions.values_list('department_name', flat=True).distinct().order_by('department_name')),
         "communes": list(institutions.values_list('commune', flat=True).distinct().order_by('commune')),
         "regions": list(institutions.values_list('region', flat=True).distinct().order_by('region')),
+        "status_institutions": list(institutions.values_list('status', flat=True).distinct().order_by('status')),
         "etablissements": list(institutions.values_list('name', flat=True).distinct().order_by('name')),
+        "formation_selectivities": list(institutions.values_list('formations__is_selective', flat=True).distinct().order_by('formations__is_selective')),
+        "formations": list(institutions.values_list('formations__name', flat=True).distinct().order_by('formations__name')),
     }
     return JsonResponse(data)
