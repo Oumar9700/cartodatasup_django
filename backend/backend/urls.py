@@ -26,18 +26,14 @@ from rest_framework.routers import DefaultRouter
 from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureViewSet
 
 from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView
-from admissions.views import stats_par_statut_etablissement
-from admissions.views import AFormationParStatutView
-
+from admissions.views import stats_par_statut_etablissement, get_filter_options
+# from admissions.views import AFormationParStatutView
 
 router = DefaultRouter()
 router.register(r'institutions', InstitutionViewSet)
 router.register(r'formations', FormationViewSet)
 router.register(r'candidatures', CandidatureViewSet)
 
-
-urlpatterns = [
-]
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -50,9 +46,13 @@ urlpatterns = [
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/logout/', LogoutView.as_view(), name='logout'),
 
-    path('api/stats-status_etablissement/', stats_par_statut_etablissement),
-    path('api/formations/status/', FormationParStatutView.as_view(), name='formations-par-statut'),
-    path('api/stats-etablissement/', AFormationParStatutView.as_view()),
+   
+
+    path('api/filters/', get_filter_options, name='get_filter_options'),
+
+    path('api/public-vs-private/', stats_par_statut_etablissement),
+    # path('api/formations/status/', FormationParStatutView.as_view(), name='formations-par-statut'),
+    # path('api/stats-etablissement/', AFormationParStatutView.as_view()),
 
     path('api/', include(router.urls)),
 ]

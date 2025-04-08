@@ -17,7 +17,7 @@ from django.contrib.auth import logout
 
 from django.db.models import Count, Sum, Q
 from rest_framework.decorators import api_view
-
+from django.http import JsonResponse
 
 class FormationParStatutView(APIView):
     def get(self, request):
@@ -165,3 +165,40 @@ def stats_par_statut_etablissement(request):
     )
 
     return Response(data)
+
+
+def get_filter_options(request):
+
+    # Récupération des filtres depuis la query string
+    annee = request.GET.get('annee')
+    academy = request.GET.get('academy')
+    departement = request.GET.get('departement')
+    region = request.GET.get('region')
+    etablissement = request.GET.get('etablissement')
+
+    institutions = Institution.objects.all()
+    candidatures = Candidature.objects.all()
+
+    if annee:
+        institutions = institutions.filter(formations__candidatures__session_year=annee)
+    if academy:
+        institutions = institutions.filter(academy=academy)
+    if departement:
+        institutions = institutions.filter(department_name=departement)
+    if region:
+        institutions = institutions.filter(region=region)
+    if etablissement:
+        institutions = institutions.filter(name=etablissement)
+    # Agrégation par statut
+    # institutions = institutions.values('status').annotate(
+    #     nombre_formations=Count('formations', distinct=True), 
+    
+    data = {
+        "annees": list(candidatures.values_list('session_year', flat=True).distinct().order_by('session_year')),
+        "academies": list(institutions.values_list('academy', flat=True).distinct().order_by('academy')),
+        "departements": list(institutions.values_list('department_name', flat=True).distinct().order_by('department_name')),
+        "communes": list(institutions.values_list('commune', flat=True).distinct().order_by('commune')),
+        "regions": list(institutions.values_list('region', flat=True).distinct().order_by('region')),
+        "etablissements": list(institutions.values_list('name', flat=True).distinct().order_by('name')),
+    }
+    return JsonResponse(data)
