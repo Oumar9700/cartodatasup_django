@@ -19,6 +19,9 @@ from django.db.models import Count, Sum, Q
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 
+from django.db.models import Sum, F, FloatField, ExpressionWrapper
+from rest_framework.permissions import IsAuthenticated
+
 class FormationParStatutView(APIView):
     def get(self, request):
         data = (
@@ -117,86 +120,14 @@ class LogoutView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 # Authentication
 
-
-
-
-@api_view(['GET'])
-def stats_par_statut_etablissement(request):
-    # Récupération des filtres depuis la query string
-    annee = request.GET.get('annee')
-    academy = request.GET.get('academy')
-    departement = request.GET.get('departement')
-    region = request.GET.get('region')
-    status_institution = request.GET.get('status_institution')
-    etablissement = request.GET.get('etablissement')
-    formation_selectivity = request.GET.get('formation_selectivity')
-    formation = request.GET.get('formation')
-
-    # Filtrage des institutions si filtre présent
-    institutions = Institution.objects.all()
-
-    if annee:
-        institutions = institutions.filter(formations__candidatures__session_year=annee)
-    if academy:
-        institutions = institutions.filter(academy=academy)
-    if departement:
-        institutions = institutions.filter(department_name=departement)
-    if region:
-        institutions = institutions.filter(region=region)
-    if status_institution:
-        institutions = institutions.filter(status=status_institution)
-    if etablissement:
-        institutions = institutions.filter(name=etablissement)
-    if formation_selectivity:
-        if formation_selectivity == "true":
-            formation_selectivity = True
-        elif formation_selectivity == "false":  
-            formation_selectivity = False
-        institutions = institutions.filter(formations__is_selective=formation_selectivity)
-    if formation:
-        institutions = institutions.filter(formations__name=formation)
-
-    # Agrégation par statut
-    data = institutions.values('status').annotate(
-        nombre_formations=Count('formations', distinct=True),
-
-        #number of formations selective with True
-        nombre_formations_selectives=Count('formations', filter=Q(formations__is_selective=True), distinct=True),
-        nombre_formations_non_selectives=Count('formations', filter=Q(formations__is_selective=False), distinct=True),
-
-        total_candidatures=Count('formations__candidatures__total_candidates'),
-        total_females=Sum('formations__candidatures__female_candidates'),
-        
-        total_admis=Sum('formations__candidatures__admitted_total'),
-        total_boursiers=Sum('formations__candidatures__boursier_candidates'),
-
-        total_neo_bac_general=Sum('formations__candidatures__neo_bac_general'),
-        neo_bac_techno=Sum('formations__candidatures__neo_bac_techno'),
-        neo_bac_pro=Sum('formations__candidatures__neo_bac_pro'),
-
-        admitted_females=Sum('formations__candidatures__admitted_females'),
-        admitted_boursiers=Sum('formations__candidatures__admitted_boursiers'),
-
-        admitted_neo_bac_general=Sum('formations__candidatures__admitted_neo_bac_general'),
-        admitted_neo_bac_pro=Sum('formations__candidatures__admitted_neo_bac_pro'),
-        admitted_neo_bac_techno=Sum('formations__candidatures__admitted_neo_bac_techno'),
-
-        mention_ab=Sum('formations__candidatures__mention_ab'),
-        mention_none=Sum('formations__candidatures__mention_none'),
-
-
-    )
-
-    return Response(data)
-
-
 def get_filter_options(request):
 
     # Récupération des filtres depuis la query string
     annee = request.GET.get('annee')
+    region = request.GET.get('region')
     academy = request.GET.get('academy')
     departement = request.GET.get('departement')
-    region = request.GET.get('region')
+    commune = request.GET.get('commune')
     status_institution = request.GET.get('status_institution')
     etablissement = request.GET.get('etablissement')
     formation_selectivity = request.GET.get('formation_selectivity')
@@ -207,12 +138,14 @@ def get_filter_options(request):
 
     if annee:
         institutions = institutions.filter(formations__candidatures__session_year=annee)
+    if region:
+        institutions = institutions.filter(region=region)
     if academy:
         institutions = institutions.filter(academy=academy)
     if departement:
         institutions = institutions.filter(department_name=departement)
-    if region:
-        institutions = institutions.filter(region=region)
+    if commune:
+        institutions = institutions.filter(commune=commune)
     if status_institution:
         institutions = institutions.filter(status=status_institution)
     if etablissement:
@@ -242,3 +175,137 @@ def get_filter_options(request):
         "formations": list(institutions.values_list('formations__name', flat=True).distinct().order_by('formations__name')),
     }
     return JsonResponse(data)
+
+
+# Indicateur: stats par statut d'établissement
+@api_view(['GET'])
+def stats_par_statut_etablissement(request):
+    # Récupération des filtres depuis la query string
+    annee = request.GET.get('annee')
+    region = request.GET.get('region')
+    academy = request.GET.get('academy')
+    departement = request.GET.get('departement')
+    commune = request.GET.get('commune')
+    status_institution = request.GET.get('status_institution')
+    etablissement = request.GET.get('etablissement')
+    formation_selectivity = request.GET.get('formation_selectivity')
+    formation = request.GET.get('formation')
+
+    # Filtrage des institutions si filtre présent
+    institutions = Institution.objects.all()
+
+    if annee:
+        institutions = institutions.filter(formations__candidatures__session_year=annee)
+    if region:
+        institutions = institutions.filter(region=region)
+    if academy:
+        institutions = institutions.filter(academy=academy)
+    if departement:
+        institutions = institutions.filter(department_name=departement)
+    if commune:
+        institutions = institutions.filter(commune=commune)
+    if status_institution:
+        institutions = institutions.filter(status=status_institution)
+    if etablissement:
+        institutions = institutions.filter(name=etablissement)
+    if formation_selectivity:
+        if formation_selectivity == "true":
+            formation_selectivity = True
+        elif formation_selectivity == "false":  
+            formation_selectivity = False
+        institutions = institutions.filter(formations__is_selective=formation_selectivity)
+    if formation:
+        institutions = institutions.filter(formations__name=formation)
+
+    # Agrégation par statut
+    data = institutions.values('status').annotate(
+        nombre_formations=Count('formations', distinct=True),
+
+        #number of formations selective with True
+        nombre_formations_selectives=Count('formations', filter=Q(formations__is_selective=True), distinct=True),
+        nombre_formations_non_selectives=Count('formations', filter=Q(formations__is_selective=False), distinct=True),
+
+        total_candidatures=Sum('formations__candidatures__total_candidates'),
+        total_females=Sum('formations__candidatures__female_candidates'),
+        
+        total_admis=Sum('formations__candidatures__admitted_total'),
+        total_boursiers=Sum('formations__candidatures__boursier_candidates'),
+
+        total_neo_bac_general=Sum('formations__candidatures__neo_bac_general'),
+        neo_bac_techno=Sum('formations__candidatures__neo_bac_techno'),
+        neo_bac_pro=Sum('formations__candidatures__neo_bac_pro'),
+
+        admitted_females=Sum('formations__candidatures__admitted_females'),
+        admitted_boursiers=Sum('formations__candidatures__admitted_boursiers'),
+
+        admitted_neo_bac_general=Sum('formations__candidatures__admitted_neo_bac_general'),
+        admitted_neo_bac_pro=Sum('formations__candidatures__admitted_neo_bac_pro'),
+        admitted_neo_bac_techno=Sum('formations__candidatures__admitted_neo_bac_techno'),
+
+        mention_ab=Sum('formations__candidatures__mention_ab'),
+        mention_none=Sum('formations__candidatures__mention_none'),
+    )
+
+    return Response(data)
+
+
+# Indicateur: ratio capacité candidats
+class RatioCapaciteCandidatsView(APIView):
+
+    def get(self, request):
+
+        annee = request.query_params.get('annee')
+        region = request.query_params.get('region')
+        academy = request.query_params.get('academy')
+        departement = request.query_params.get('departement')
+        commune = request.query_params.get('commune')
+        status_institution = request.query_params.get('status_institution')
+        etablissement = request.query_params.get('etablissement')
+        formation_selectivity = request.query_params.get('formation_selectivity')
+        formation = request.query_params.get('formation')
+
+        tri = request.query_params.get('tri', 'ratio')  # default: sort by ratio
+
+        filters = Q()
+        if annee:
+            filters &= Q(candidatures__session_year=annee)
+        if region:
+            filters &= Q(institution__region=region)
+        if academy:
+            filters &= Q(institution__academy=academy)
+        if departement:
+            filters &= Q(institution__department_name=departement)
+        if commune:
+            filters &= Q(institution__commune=commune)
+        if status_institution:
+            filters &= Q(institution__status=status_institution)
+        if etablissement:
+            filters &= Q(institution__name__icontains=etablissement)
+        if formation_selectivity:
+            if formation_selectivity.lower() == 'true':
+                filters &= Q(is_selective=True)
+            elif formation_selectivity.lower() == 'false':
+                filters &= Q(is_selective=False)
+        if formation:
+            filters &= Q(name__icontains=formation)
+
+        formations = Formation.objects.filter(filters).annotate(
+            total_candidats=Sum('candidatures__total_candidates'),
+            ratio=ExpressionWrapper(
+                F('capacity') * 1.0 / F('candidatures__total_candidates'),
+                output_field=FloatField()
+            )
+        ).order_by(f'-{tri}' if tri in ['ratio', 'capacite', 'total_candidats'] else '-ratio')
+
+        data = [
+            {
+                'formation_name': f.name,
+                'capacity': f.capacity,
+                'total_candidates': f.total_candidats,
+                'ratio': round(f.ratio, 2) if f.ratio else None,
+            }
+            for f in formations
+        ]
+
+        return Response(data)
+
