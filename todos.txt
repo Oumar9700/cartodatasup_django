@@ -1,1 +1,4 @@
-endpoint to logout
+NOT DONE :
+
+ - login with email
+ - endpoint to logout
