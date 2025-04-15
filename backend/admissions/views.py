@@ -60,8 +60,53 @@ class InstitutionViewSet(viewsets.ModelViewSet):
     serializer_class = InstitutionSerializer
 
 class FormationViewSet(viewsets.ModelViewSet):
+
+    #pagination to none
+    pagination_class = None
     queryset = Formation.objects.all()
     serializer_class = FormationSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Récupérer les paramètres de filtre depuis la requête
+        annee = self.request.query_params.get('annee')
+        region = self.request.query_params.get('region')
+        academy = self.request.query_params.get('academy')
+        departement = self.request.query_params.get('departement')
+        commune = self.request.query_params.get('commune')
+        status_institution = self.request.query_params.get('status_institution')
+        etablissement = self.request.query_params.get('etablissement')
+        formation_selectivity = self.request.query_params.get('formation_selectivity')
+        formation = self.request.query_params.get('formation')
+
+        # Appliquer les filtres
+        if annee:
+            queryset = queryset.filter(candidatures__session_year=annee)
+        if region:
+            queryset = queryset.filter(institution__region=region)
+        if academy:
+            queryset = queryset.filter(institution__academy=academy)
+        if departement:
+            queryset = queryset.filter(institution__department_name=departement)
+        if commune:
+            queryset = queryset.filter(institution__commune=commune)
+        if status_institution:
+            queryset = queryset.filter(institution__status=status_institution)
+        if etablissement:
+            queryset = queryset.filter(institution__name=etablissement)
+        if formation_selectivity:
+            if formation_selectivity == "true":
+                formation_selectivity = True
+            elif formation_selectivity == "false":  
+                formation_selectivity = False
+            queryset = queryset.filter(is_selective=formation_selectivity)
+        if formation:
+            queryset = queryset.filter(name=formation)
+
+        #order by capacity desc
+        queryset = queryset.order_by('-capacity')
+
+        return queryset
 
 class CandidatureViewSet(viewsets.ModelViewSet):
     queryset = Candidature.objects.all()
@@ -250,8 +295,7 @@ def stats_par_statut_etablissement(request):
 
 
 # Indicateur: ratio capacité candidats
-class RatioCapaciteCandidatsView(APIView):
-
+class FormationsStatsView(APIView):
     def get(self, request):
 
         annee = request.query_params.get('annee')
@@ -291,18 +335,32 @@ class RatioCapaciteCandidatsView(APIView):
 
         formations = Formation.objects.filter(filters).annotate(
             total_candidats=Sum('candidatures__total_candidates'),
+            admitted_total=Sum('candidatures__admitted_total'),
             ratio=ExpressionWrapper(
                 F('capacity') * 1.0 / F('candidatures__total_candidates'),
                 output_field=FloatField()
-            )
-        ).order_by(f'-{tri}' if tri in ['ratio', 'capacite', 'total_candidats'] else '-ratio')
+            ),
+            #filling_rate
+            filling_rate  = ExpressionWrapper(
+                F('candidatures__admitted_total') * 1.0 / F('capacity'),
+                output_field=FloatField()
+            ),   
+            #admission_rate
+            admission_rate  = ExpressionWrapper(
+                F('candidatures__admitted_total') * 1.0 / F('candidatures__total_candidates'),
+                output_field=FloatField()
+            ),   
+        ).order_by(f'-{tri}' if tri in ['ratio', 'capacite', 'total_candidats', 'filling_rate'] else '-ratio')
 
         data = [
             {
-                'formation_name': f.name,
+                'formation_name': f.detailed_category,
                 'capacity': f.capacity,
                 'total_candidates': f.total_candidats,
-                'ratio': round(f.ratio, 2) if f.ratio else None,
+                'admitted_total': f.admitted_total,
+                'ratio': f.ratio ,
+                'filling_rate': round((f.filling_rate or 0) * 100.0, 2),
+                'admission_rate': round((f.admission_rate or 0) * 100.0, 2),
             }
             for f in formations
         ]
