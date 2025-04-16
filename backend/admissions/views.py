@@ -367,3 +367,73 @@ class FormationsStatsView(APIView):
 
         return Response(data)
 
+
+# Indicateur: repartition des admis
+class RepartitionAdmisView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        
+        annee = request.query_params.get('annee')
+        region = request.query_params.get('region')
+        academy = request.query_params.get('academy')
+        departement = request.query_params.get('departement')
+        commune = request.query_params.get('commune')
+        status_institution = request.query_params.get('status_institution')
+        etablissement = request.query_params.get('etablissement')
+        formation_selectivity = request.query_params.get('formation_selectivity')
+        formation = request.query_params.get('formation')
+
+        filters = Q()
+        if annee:
+            filters &= Q(session_year=annee)
+        if region:
+            filters &= Q(formation__institution__region=region)
+        if academy:
+            filters &= Q(formation__institution__academy=academy)
+        if departement:
+            filters &= Q(formation__institution__department_name=departement)
+        if commune:
+            filters &= Q(formation__institution__commune=commune)
+        if status_institution:
+            filters &= Q(formation__institution__status=status_institution)
+        if etablissement:
+            filters &= Q(formation__institution__name__icontains=etablissement)
+        if formation_selectivity:
+            if formation_selectivity.lower() == 'true':
+                filters &= Q(formation__is_selective=True)
+            elif formation_selectivity.lower() == 'false':
+                filters &= Q(formation__is_selective=False)
+        if formation:
+            filters &= Q(formation__name__icontains=formation)
+
+
+        result = Candidature.objects.filter(filters).aggregate(
+            #type de bac
+            admitted_neo_bac_general=Sum("admitted_neo_bac_general"),
+            admitted_neo_bac_techno=Sum("admitted_neo_bac_techno"),
+            admitted_neo_bac_pro=Sum("admitted_neo_bac_pro"),
+            admitted_others_candidates=Sum("admitted_others_candidates"),
+
+            #mentions
+            mention_tb=Sum("mention_tb"),
+            mention_b=Sum("mention_b"),
+            mention_ab=Sum("mention_ab"),
+            mention_none=Sum("mention_none"),
+
+            #mobilite
+            same_academy_admissions=Sum("same_academy_admissions"),
+            different_academy_admissions=Sum("different_academy_admissions"), 
+
+            #boursiers
+            boursiers=Sum("admitted_boursiers"),
+            total_admitted=Sum("admitted_total"),
+            total_candidates=Sum("total_candidates"),
+
+            #delais admission
+            before_bac=Sum("admitted_before_bac"),
+            after_procedure_start=Sum("admitted_after_procedure_start"),
+            after_procedure_end=Sum("admitted_after_procedure_end"),
+        )
+
+        return Response(result)

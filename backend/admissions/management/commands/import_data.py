@@ -60,12 +60,16 @@ class Command(BaseCommand):
                         neo_bac_pro=int(row["Effectif des candidats néo bacheliers professionnels en phase principale"] or 0),
 
                         admitted_total=int(row["Effectif total des candidats ayant accepté la proposition de l’établissement (admis)"] or 0),
+                        admitted_neo_bac=int(row["Effectif des admis néo bacheliers"] or 0),
                         admitted_females=int(row["Dont effectif des candidates admises"] or 0),
                         admitted_boursiers=int(row["Dont effectif des admis boursiers néo bacheliers"] or 0),
 
+                        #a savoir : admitted_neo_bac = la somme des trois suivants
+                        #a savoir : admitted_total = la somme des quatre suivants
                         admitted_neo_bac_general=int(row["Effectif des admis néo bacheliers généraux"] or 0),
                         admitted_neo_bac_techno=int(row["Effectif des admis néo bacheliers technologiques"] or 0),
                         admitted_neo_bac_pro=int(row["Effectif des admis néo bacheliers professionnels"] or 0),
+                        admitted_others_candidates=int(row["Effectif des autres candidats admis"] or 0),
 
                         mention_tb=int(row["Dont effectif des admis néo bacheliers avec mention Très Bien au bac"] or 0),
                         mention_b=int(row["Dont effectif des admis néo bacheliers avec mention Bien au bac"] or 0),
