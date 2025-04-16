@@ -1,3 +1,9 @@
 NOT DONE :
  - login with email
  - endpoint to logout
+ - loading... pour indiquer le chargement en cours
+ - ameliorer les performances (rapidité), peut etre en paginant les trucs
+ - fonctionnalités de parametrage, de personnalisation, d'exportation des graphes
+ - actu on utilise que les données de 2023 
+ - fonctionnalités d'ajout automatique par fichier des données
+ - 

@@ -350,7 +350,7 @@ class FormationsStatsView(APIView):
                 F('candidatures__admitted_total') * 1.0 / F('candidatures__total_candidates'),
                 output_field=FloatField()
             ),   
-        ).order_by(f'-{tri}' if tri in ['ratio', 'capacite', 'total_candidats', 'filling_rate'] else '-ratio')
+        ).order_by(f'-{tri}' if tri in ['ratio', 'capacity', 'total_candidats', 'filling_rate', 'admission_rate'] else '-ratio')
 
         data = [
             {
