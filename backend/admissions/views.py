@@ -93,7 +93,7 @@ class FormationViewSet(viewsets.ModelViewSet):
         if status_institution:
             queryset = queryset.filter(institution__status=status_institution)
         if etablissement:
-            queryset = queryset.filter(institution__name=etablissement)
+            queryset = queryset.filter(institution__name__icontains=etablissement)
         if formation_selectivity:
             if formation_selectivity == "true":
                 formation_selectivity = True
@@ -101,7 +101,7 @@ class FormationViewSet(viewsets.ModelViewSet):
                 formation_selectivity = False
             queryset = queryset.filter(is_selective=formation_selectivity)
         if formation:
-            queryset = queryset.filter(name=formation)
+            queryset = queryset.filter(detailed_category__icontains=formation)
 
         #order by capacity desc
         queryset = queryset.order_by('-capacity')
@@ -252,7 +252,7 @@ def stats_par_statut_etablissement(request):
     if status_institution:
         institutions = institutions.filter(status=status_institution)
     if etablissement:
-        institutions = institutions.filter(name=etablissement)
+        institutions = institutions.filter(name__icontains=etablissement)
     if formation_selectivity:
         if formation_selectivity == "true":
             formation_selectivity = True
@@ -260,7 +260,7 @@ def stats_par_statut_etablissement(request):
             formation_selectivity = False
         institutions = institutions.filter(formations__is_selective=formation_selectivity)
     if formation:
-        institutions = institutions.filter(formations__name=formation)
+        institutions = institutions.filter(formations__detailed_category__icontains=formation)
 
     # Agrégation par statut
     data = institutions.values('status').annotate(
@@ -331,7 +331,7 @@ class FormationsStatsView(APIView):
             elif formation_selectivity.lower() == 'false':
                 filters &= Q(is_selective=False)
         if formation:
-            filters &= Q(name__icontains=formation)
+            filters &= Q(detailed_category__icontains=formation)
 
         formations = Formation.objects.filter(filters).annotate(
             total_candidats=Sum('candidatures__total_candidates'),
@@ -405,7 +405,7 @@ class RepartitionAdmisView(APIView):
             elif formation_selectivity.lower() == 'false':
                 filters &= Q(formation__is_selective=False)
         if formation:
-            filters &= Q(formation__name__icontains=formation)
+            filters &= Q(formation__detailed_category__icontains=formation)
 
 
         result = Candidature.objects.filter(filters).aggregate(
@@ -428,6 +428,7 @@ class RepartitionAdmisView(APIView):
             #boursiers
             boursiers=Sum("admitted_boursiers"),
             total_admitted=Sum("admitted_total"),
+            admitted_females=Sum("admitted_females"),
             total_candidates=Sum("total_candidates"),
 
             #delais admission

@@ -6,4 +6,14 @@ NOT DONE :
  - fonctionnalités de parametrage, de personnalisation, d'exportation des graphes
  - actu on utilise que les données de 2023 
  - fonctionnalités d'ajout automatique par fichier des données
- - 
+ - la question de l'uniformisation des variables dans les codes
+ - la question de l'utilisation du nom de formation detaillé ou nom de formation tout court
+    - aussi pouvoir faire une recherche suivant un secteur en tapant juste
+
+- faire un zoom sur les graphiques
+- filtres croisées à celui du champ de recherche : en gros faire une recherche suivant un secteur
+- la reinitialisation fluide des données a l'effacement du champ de recherche
+
+
+ATTENTION :
+- faire attention a l'utilisation de departement_name et departemnent_code
