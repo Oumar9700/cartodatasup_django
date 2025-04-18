@@ -25,7 +25,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureViewSet
 
-from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView, RatioCapaciteCandidatsView
+from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView, RatioCapaciteCandidatsView, RepartitionGeographiqueFormationsView
 from admissions.views import stats_par_statut_etablissement, get_filter_options
 # from admissions.views import AFormationParStatutView
 
@@ -50,6 +50,8 @@ urlpatterns = [
 
     path('api/public-vs-private/', stats_par_statut_etablissement),
     path('api/ratio-capacity-candidates/', RatioCapaciteCandidatsView.as_view(), name='ratio-capacity-candidates'),
+    path('api/repartition-geographique-formations/', RepartitionGeographiqueFormationsView.as_view(), name='repartition_geographique_formations'),
+
     # path('api/formations/status/', FormationParStatutView.as_view(), name='formations-par-statut'),
     # path('api/stats-etablissement/', AFormationParStatutView.as_view()),
 
