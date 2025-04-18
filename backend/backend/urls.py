@@ -25,7 +25,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureViewSet
 
-from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView, RatioCapaciteCandidatsView, RepartitionGeographiqueFormationsView
+from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView, FormationsStatsView, RepartitionAdmisView, RepartitionGeographiqueFormationsView
 from admissions.views import stats_par_statut_etablissement, get_filter_options
 # from admissions.views import AFormationParStatutView
 
