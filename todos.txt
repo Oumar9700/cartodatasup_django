@@ -1,4 +1,5 @@
 NOT DONE :
+<<<<<<< HEAD
  - login with email
  - endpoint to logout
  - loading... pour indiquer le chargement en cours
@@ -6,6 +7,16 @@ NOT DONE :
  - fonctionnalités de parametrage, de personnalisation, d'exportation des graphes
  - actu on utilise que les données de 2023 
  - fonctionnalités d'ajout automatique par fichier des données
+=======
+
+ - fonctionnalités de parametrage, de personnalisation, d'exportation des graphes
+ - fonctionnalités d'ajout automatique par fichier des données
+ 
+ - login with email
+ - endpoint to logout - loading... pour indiquer le chargement en cours
+ - ameliorer les performances (rapidité), peut etre en paginant les trucs
+ - actu on utilise que les données de 2023 
+>>>>>>> oumar
  - la question de l'uniformisation des variables dans les codes
  - la question de l'utilisation du nom de formation detaillé ou nom de formation tout court
     - aussi pouvoir faire une recherche suivant un secteur en tapant juste

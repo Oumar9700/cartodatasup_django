@@ -438,3 +438,29 @@ class RepartitionAdmisView(APIView):
         )
 
         return Response(result)
+
+class RepartitionGeographiqueFormationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        group_by = request.query_params.get("group_by", "region")  # ou 'academie', 'departement', 'commune'
+
+        if group_by not in ["region", "academy", "department_name", "commune"]:
+            return Response({"error": "Paramètre group_by invalide"}, status=400)
+
+        results = (
+            Formation.objects.select_related("institution")
+            .values(f"institution__{group_by}")
+            .annotate(nombre_formations=Count("id"))
+            .order_by(f"institution__{group_by}")
+        )
+
+        data = [
+            {
+                "lieu": r[f"institution__{group_by}"],
+                "nombre_formations": r["nombre_formations"],
+            }
+            for r in results
+        ]
+
+        return Response(data)
