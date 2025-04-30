@@ -79,6 +79,10 @@ class FormationViewSet(viewsets.ModelViewSet):
         formation_selectivity = self.request.query_params.get('formation_selectivity')
         formation = self.request.query_params.get('formation')
 
+        #une formation recherchée par saisie
+        formation_searched = self.request.query_params.get('formation_searched')
+
+
         # Appliquer les filtres
         if annee:
             queryset = queryset.filter(candidatures__session_year=annee)
@@ -102,6 +106,9 @@ class FormationViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(is_selective=formation_selectivity)
         if formation:
             queryset = queryset.filter(detailed_category__icontains=formation)
+        
+        if formation_searched:
+            queryset = queryset.filter(detailed_category__icontains=formation_searched)
 
         #order by capacity desc
         queryset = queryset.order_by('-capacity')
@@ -308,6 +315,9 @@ class FormationsStatsView(APIView):
         formation_selectivity = request.query_params.get('formation_selectivity')
         formation = request.query_params.get('formation')
 
+        #une formation recherchée par saisie
+        formation_searched = request.query_params.get('formation_searched')
+
         tri = request.query_params.get('tri', 'ratio')  # default: sort by ratio
         order = request.query_params.get('order', 'desc')  # default: sort by desc
         sign = '-'
@@ -338,6 +348,9 @@ class FormationsStatsView(APIView):
                 filters &= Q(is_selective=False)
         if formation:
             filters &= Q(detailed_category__icontains=formation)
+
+        if formation_searched:
+            filters &= Q(detailed_category__icontains=formation_searched)
 
         formations = Formation.objects.filter(filters).annotate(
             total_candidats=Sum('candidatures__total_candidates'),
@@ -390,6 +403,10 @@ class RepartitionAdmisView(APIView):
         formation_selectivity = request.query_params.get('formation_selectivity')
         formation = request.query_params.get('formation')
 
+        #une formation recherchée par saisie
+        formation_searched = request.query_params.get('formation_searched')
+
+
         filters = Q()
         if annee:
             filters &= Q(session_year=annee)
@@ -412,6 +429,9 @@ class RepartitionAdmisView(APIView):
                 filters &= Q(formation__is_selective=False)
         if formation:
             filters &= Q(formation__detailed_category__icontains=formation)
+        
+        if formation_searched:
+            filters &= Q(formation__detailed_category__icontains=formation_searched)
 
 
         result = Candidature.objects.filter(filters).aggregate(
@@ -449,19 +469,34 @@ class RepartitionGeographiqueFormationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+
+        #une filiere de formation en particulier recherchée par saisie
+        formation_searched = request.query_params.get('formation_searched')
+
+        #Affichage des formation par commune, département, région ...
         group_by = request.query_params.get("repartition_geo_sector", "region")  # ou 'academie', 'departement', 'commune'
         
+        #Filtrer l'affichage a tel departement, région, académie spécifique ...
         annee = request.query_params.get('annee')
         region = request.query_params.get('region')
         academy = request.query_params.get('academy')
         departement = request.query_params.get('departement')
 
-        if group_by not in ["region", "academy", "department_name", "commune"]:
-            return Response({"error": "Paramètre group_by invalide"}, status=400)
-
+        #Recuperer d'abord toutes les formations
         formations = Formation.objects.select_related("institution")
 
-        if group_by == "academy" and annee:
+        #si une recherche de formation en particulier, filtrer les formations suivant cette filiere de formation voulue
+        if formation_searched:
+            formations = formations.filter(detailed_category__icontains=formation_searched)
+        
+
+        #ensuite je traite les regroupement - affichage par region ou academie ou ...
+        if group_by not in ["region", "academy", "department_name", "commune"]:
+            return Response({"error": "Paramètre group_by invalide"}, status=400)
+        
+        # Si je veux un affichage par region et y a deja, 
+        # une annee deja choisi dans les filtres
+        if group_by == "region" and annee:
             formations = formations.filter(candidatures__session_year=annee)
 
         # Si je veux un affichage par academie et y a deja, 
