@@ -352,7 +352,7 @@ class FormationsStatsView(APIView):
         if formation_searched:
             filters &= Q(detailed_category__icontains=formation_searched)
 
-        formations = Formation.objects.filter(filters).annotate(
+        formations = Formation.objects.select_related('institution').filter(filters).annotate(
             total_candidats=Sum('candidatures__total_candidates'),
             admitted_total=Sum('candidatures__admitted_total'),
             ratio=ExpressionWrapper(
@@ -380,6 +380,13 @@ class FormationsStatsView(APIView):
                 'ratio': f.ratio ,
                 'filling_rate': round((f.filling_rate or 0) * 100.0, 2),
                 'admission_rate': round((f.admission_rate or 0) * 100.0, 2),
+
+                # ➕ Infos sur l’établissement
+                'etablissement': f.institution.name,
+                'region': f.institution.region,
+                'departement': f.institution.department_name,
+                'academy': f.institution.academy,
+                'commune': f.institution.commune,
             }
             for f in formations
         ]
