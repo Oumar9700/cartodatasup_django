@@ -309,6 +309,12 @@ class FormationsStatsView(APIView):
         formation = request.query_params.get('formation')
 
         tri = request.query_params.get('tri', 'ratio')  # default: sort by ratio
+        order = request.query_params.get('order', 'desc')  # default: sort by desc
+        sign = '-'
+        if(order and order == "desc"):
+            sign = '-'
+        if(order and order == "asc"):
+            sign = ''
 
         filters = Q()
         if annee:
@@ -350,7 +356,7 @@ class FormationsStatsView(APIView):
                 F('candidatures__admitted_total') * 1.0 / F('candidatures__total_candidates'),
                 output_field=FloatField()
             ),   
-        ).order_by(f'-{tri}' if tri in ['ratio', 'capacity', 'total_candidats', 'filling_rate', 'admission_rate'] else '-ratio')
+        ).order_by(f'{sign}{tri}' if tri in ['ratio', 'capacity', 'total_candidats', 'filling_rate', 'admission_rate'] else '-ratio')
 
         data = [
             {
