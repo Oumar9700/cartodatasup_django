@@ -449,13 +449,53 @@ class RepartitionGeographiqueFormationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        group_by = request.query_params.get("group_by", "region")  # ou 'academie', 'departement', 'commune'
+        group_by = request.query_params.get("repartition_geo_sector", "region")  # ou 'academie', 'departement', 'commune'
+        
+        annee = request.query_params.get('annee')
+        region = request.query_params.get('region')
+        academy = request.query_params.get('academy')
+        departement = request.query_params.get('departement')
 
         if group_by not in ["region", "academy", "department_name", "commune"]:
             return Response({"error": "Paramètre group_by invalide"}, status=400)
 
+        formations = Formation.objects.select_related("institution")
+
+        if group_by == "academy" and annee:
+            formations = formations.filter(candidatures__session_year=annee)
+
+        # Si je veux un affichage par academie et y a deja, 
+        # une, region ou une annee deja choisi dans les filtres
+        if group_by == "academy" and region:
+            formations = formations.filter(institution__region=region)
+        if group_by == "academy" and annee:
+            formations = formations.filter(candidatures__session_year=annee)
+        
+
+        # Si je veux un affichage par departement et y a deja une academy, 
+        # une region ou une annee deja choisi dans les filtres
+        if group_by == "department_name" and academy:
+            formations = formations.filter(institution__academy=academy)
+        if group_by == "department_name" and region:
+            formations = formations.filter(institution__region=region)
+        if group_by == "department_name" and annee:
+            formations = formations.filter(candidatures__session_year=annee)
+        
+
+        # Si je veux un affichage par commune et y a deja une region, 
+        # une academie ou un departement ou une annees deja choisi dans les filtres
+        if group_by == "commune" and departement:
+            formations = formations.filter(institution__department_name=departement)
+        if group_by == "commune" and academy:
+            formations = formations.filter(institution__academy=academy)
+        if group_by == "commune" and region:
+            formations = formations.filter(institution__region=region)
+        if group_by == "commune" and annee:
+            formations = formations.filter(candidatures__session_year=annee)
+        
+
         results = (
-            Formation.objects.select_related("institution")
+            formations
             .values(f"institution__{group_by}")
             .annotate(nombre_formations=Count("id"))
             .order_by(f"institution__{group_by}")
