@@ -9,7 +9,7 @@ class Institution(models.Model):
     region = models.CharField(max_length=100)
     academy = models.CharField(max_length=100)
     commune = models.CharField(max_length=100)
-    is_public = models.BooleanField(default=True)
+    status = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
@@ -41,12 +41,14 @@ class Candidature(models.Model):
     neo_bac_pro = models.IntegerField()
     
     admitted_total = models.IntegerField()
+    admitted_neo_bac = models.IntegerField()
     admitted_females = models.IntegerField()
     admitted_boursiers = models.IntegerField()
     
     admitted_neo_bac_general = models.IntegerField()
     admitted_neo_bac_techno = models.IntegerField()
     admitted_neo_bac_pro = models.IntegerField()
+    admitted_others_candidates = models.IntegerField()
 
     #Ajout de détails sur les mentions obtenues par les admis
     mention_tb = models.IntegerField(default=0)
