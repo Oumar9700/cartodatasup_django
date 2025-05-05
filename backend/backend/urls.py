@@ -23,10 +23,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 #for Api
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureViewSet
+from admissions.views import InstitutionViewSet, FormationViewSet, CandidatureViewSet, import_data
+
+from admissions.views import stats_par_statut_etablissement, get_filter_options
+
 
 from admissions.views import RegisterView, LoginView, LogoutView, FormationParStatutView, FormationsStatsView, RepartitionAdmisView, RepartitionGeographiqueFormationsView
-from admissions.views import stats_par_statut_etablissement, get_filter_options
+
 # from admissions.views import AFormationParStatutView
 
 router = DefaultRouter()
@@ -53,9 +56,14 @@ urlpatterns = [
     path('api/admissions/repartition/', RepartitionAdmisView.as_view(), name='repartition-admis'),
     path('api/repartition-geographique-formations/', RepartitionGeographiqueFormationsView.as_view(), name='repartition_geographique_formations'),
 
+    path('import-data/',import_data, name='import_data'),
+
+
     # path('api/formations/status/', FormationParStatutView.as_view(), name='formations-par-statut'),
     # path('api/stats-etablissement/', AFormationParStatutView.as_view()),
 
     path('api/', include(router.urls)),
 ]
+
+
 
