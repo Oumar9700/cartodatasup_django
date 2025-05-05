@@ -159,7 +159,7 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://kaleinno.fr/stage/",
+    "https://kaleinno.fr",
 ]
 
 
