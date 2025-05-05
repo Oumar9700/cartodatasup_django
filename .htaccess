@@ -1,0 +1,10 @@
+# Active mod_rewrite
+RewriteEngine On
+
+# Redirige tout vers wsgi.py sauf les fichiers statiques
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /myproject.wsgi/$1 [QSA,PT,L]
+
+# (optionnel) Gère les erreurs
+ErrorDocument 500 "Internal Server Error"
