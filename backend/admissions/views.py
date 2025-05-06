@@ -562,98 +562,97 @@ class RepartitionGeographiqueFormationsView(APIView):
 
 
 
+import csv
+import io
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 @csrf_exempt
 def import_data(request):
-    print("aka")
-    if request.method == 'POST' and request.FILES['csv_file']:
+    if request.method == 'POST' and request.FILES.get('csv_file'):
         csv_file = request.FILES['csv_file']
-        
-        # Sauvegarder temporairement le fichier CSV
-        fs = FileSystemStorage()
-        filename = fs.save(csv_file.name, csv_file)
-        file_path = fs.url(filename)
+
+        # Vérifie si c'est un CSV
+        if not csv_file.name.endswith('.csv'):
+            return JsonResponse({"error": "Le fichier doit être au format .csv"}, status=400)
 
         try:
-            with open(file_path, newline='', encoding='utf-8-sig') as csvfile:
-                reader = csv.DictReader(csvfile, delimiter=';')
+            # Lire le fichier en mémoire
+            data = csv_file.read().decode('utf-8-sig')
+            csvfile = io.StringIO(data)
+            reader = csv.DictReader(csvfile, delimiter=';')
 
-                for row in reader:
-                    try:
-                        # 🔹 Création ou mise à jour de l'établissement
-                        institution, _ = Institution.objects.get_or_create(
-                            uai_code=row["Code UAI de l'établissement"],
-                            defaults={
-                                "name": row["Établissement"],
-                                "department_code": row["Code départemental de l’établissement"],
-                                "department_name": row["Département de l’établissement"],
-                                "region": row["Région de l’établissement"],
-                                "academy": row["Académie de l’établissement"],
-                                "commune": row["Commune de l’établissement"],
-                                "status": row["Statut de l’établissement de la filière de formation (public, privé…)"]
-                            }
-                        )
+            for row in reader:
+                try:
+                    # 🔹 Institution
+                    institution, _ = Institution.objects.get_or_create(
+                        uai_code=row["Code UAI de l'établissement"],
+                        defaults={
+                            "name": row["Établissement"],
+                            "department_code": row["Code départemental de l’établissement"],
+                            "department_name": row["Département de l’établissement"],
+                            "region": row["Région de l’établissement"],
+                            "academy": row["Académie de l’établissement"],
+                            "commune": row["Commune de l’établissement"],
+                            "status": row["Statut de l’établissement de la filière de formation (public, privé…)"]
+                        }
+                    )
 
-                        # 🔹 Création ou mise à jour de la formation
-                        formation, _ = Formation.objects.get_or_create(
-                            institution=institution,
-                            name=row["Filière de formation"],
-                            category=row["Filière de formation très agrégée"],
-                            detailed_category=row["Filière de formation détaillée"],
-                            is_selective=row["Sélectivité"] == "formation sélective",
-                            gps_coordinates=row["Coordonnées GPS de la formation"],
-                            capacity=int(row["Capacité de l’établissement par formation"] or 0)
-                        )
+                    # 🔹 Formation
+                    formation, _ = Formation.objects.get_or_create(
+                        institution=institution,
+                        name=row["Filière de formation"],
+                        category=row["Filière de formation très agrégée"],
+                        detailed_category=row["Filière de formation détaillée"],
+                        is_selective=row["Sélectivité"].strip().lower() == "formation sélective",
+                        gps_coordinates=row["Coordonnées GPS de la formation"],
+                        capacity=int(row["Capacité de l’établissement par formation"] or 0)
+                    )
 
-                        # 🔹 Création de la candidature
-                        Candidature.objects.create(
-                            formation=formation,
-                            session_year=int(row["Session"]),
+                    # 🔹 Candidature
+                    Candidature.objects.create(
+                        formation=formation,
+                        session_year=int(row["Session"]),
+                        total_candidates=int(row["Effectif total des candidats pour une formation"] or 0),
+                        female_candidates=int(row["Dont effectif des candidates pour une formation"] or 0),
+                        boursier_candidates=sum([
+                            int(row["Dont effectif des candidats boursiers néo bacheliers généraux en phase principale"] or 0),
+                            int(row["Dont effectif des candidats boursiers néo bacheliers technologiques en phase principale"] or 0),
+                            int(row["Dont effectif des candidats boursiers néo bacheliers professionnels en phase principale"] or 0)
+                        ]),
+                        neo_bac_general=int(row["Effectif des candidats néo bacheliers généraux en phase principale"] or 0),
+                        neo_bac_techno=int(row["Effectif des candidats néo bacheliers technologiques en phase principale"] or 0),
+                        neo_bac_pro=int(row["Effectif des candidats néo bacheliers professionnels en phase principale"] or 0),
+                        admitted_total=int(row["Effectif total des candidats ayant accepté la proposition de l’établissement (admis)"] or 0),
+                        admitted_neo_bac=int(row["Effectif des admis néo bacheliers"] or 0),
+                        admitted_females=int(row["Dont effectif des candidates admises"] or 0),
+                        admitted_boursiers=int(row["Dont effectif des admis boursiers néo bacheliers"] or 0),
+                        admitted_neo_bac_general=int(row["Effectif des admis néo bacheliers généraux"] or 0),
+                        admitted_neo_bac_techno=int(row["Effectif des admis néo bacheliers technologiques"] or 0),
+                        admitted_neo_bac_pro=int(row["Effectif des admis néo bacheliers professionnels"] or 0),
+                        admitted_others_candidates=int(row["Effectif des autres candidats admis"] or 0),
+                        mention_tb=int(row["Dont effectif des admis néo bacheliers avec mention Très Bien au bac"] or 0),
+                        mention_b=int(row["Dont effectif des admis néo bacheliers avec mention Bien au bac"] or 0),
+                        mention_ab=int(row["Dont effectif des admis néo bacheliers avec mention Assez Bien au bac"] or 0),
+                        mention_none=int(row["Dont effectif des admis néo bacheliers sans mention au bac"] or 0),
+                        same_academy_admissions=int(row["Dont effectif des admis issus de la même académie"] or 0),
+                        different_academy_admissions=(
+                            int(row["Effectif total des candidats ayant accepté la proposition de l’établissement (admis)"] or 0)
+                            - int(row["Dont effectif des admis issus de la même académie"] or 0)
+                        ),
+                        admitted_before_bac=int(float(row["Dont effectif des admis ayant reçu leur proposition d’admission avant le baccalauréat"]) or 0),
+                        admitted_after_procedure_start=int(float(row["Dont effectif des admis ayant reçu leur proposition d’admission à l'ouverture de la procédure principale"]) or 0),
+                        admitted_after_procedure_end=int(float(row["Dont effectif des admis ayant reçu leur proposition d’admission avant la fin de la procédure principale"]) or 0),
+                    )
 
-                            total_candidates=int(row["Effectif total des candidats pour une formation"] or 0),
-                            female_candidates=int(row["Dont effectif des candidates pour une formation"] or 0),
-                            boursier_candidates=int(row["Dont effectif des candidats boursiers néo bacheliers généraux en phase principale"] or 0) +
-                                                int(row["Dont effectif des candidats boursiers néo bacheliers technologiques en phase principale"] or 0) +
-                                                int(row["Dont effectif des candidats boursiers néo bacheliers professionnels en phase principale"] or 0),
-
-                            neo_bac_general=int(row["Effectif des candidats néo bacheliers généraux en phase principale"] or 0),
-                            neo_bac_techno=int(row["Effectif des candidats néo bacheliers technologiques en phase principale"] or 0),
-                            neo_bac_pro=int(row["Effectif des candidats néo bacheliers professionnels en phase principale"] or 0),
-
-                            admitted_total=int(row["Effectif total des candidats ayant accepté la proposition de l’établissement (admis)"] or 0),
-                            admitted_neo_bac=int(row["Effectif des admis néo bacheliers"] or 0),
-                            admitted_females=int(row["Dont effectif des candidates admises"] or 0),
-                            admitted_boursiers=int(row["Dont effectif des admis boursiers néo bacheliers"] or 0),
-
-                            admitted_neo_bac_general=int(row["Effectif des admis néo bacheliers généraux"] or 0),
-                            admitted_neo_bac_techno=int(row["Effectif des admis néo bacheliers technologiques"] or 0),
-                            admitted_neo_bac_pro=int(row["Effectif des admis néo bacheliers professionnels"] or 0),
-                            admitted_others_candidates=int(row["Effectif des autres candidats admis"] or 0),
-
-                            mention_tb=int(row["Dont effectif des admis néo bacheliers avec mention Très Bien au bac"] or 0),
-                            mention_b=int(row["Dont effectif des admis néo bacheliers avec mention Bien au bac"] or 0),
-                            mention_ab=int(row["Dont effectif des admis néo bacheliers avec mention Assez Bien au bac"] or 0),
-                            mention_none=int(row["Dont effectif des admis néo bacheliers sans mention au bac"] or 0),
-
-                            same_academy_admissions=int(row["Dont effectif des admis issus de la même académie"] or 0),
-                            different_academy_admissions=int(row["Effectif total des candidats ayant accepté la proposition de l’établissement (admis)"] or 0) -
-                                                        int(row["Dont effectif des admis issus de la même académie"] or 0),
-
-                            admitted_before_bac=int ( float (row["Dont effectif des admis ayant reçu leur proposition d’admission avant le baccalauréat"]) or 0),
-                            admitted_after_procedure_start=int ( float (row["Dont effectif des admis ayant reçu leur proposition d’admission à l'ouverture de la procédure principale"]) or 0),
-                            admitted_after_procedure_end=int ( float (row["Dont effectif des admis ayant reçu leur proposition d’admission avant la fin de la procédure principale"]) or 0),
-                        )
-
-                        # Confirmation
-                        self.stdout.write(self.style.SUCCESS(f"✅ Importé : {formation.name} ({row['Session']})"))
-
-                    except Exception as e:
-                        self.stderr.write(self.style.ERROR(f"❌ Erreur avec {row['Établissement']} - {str(e)}"))
+                except Exception as e:
+                    print(f"❌ Erreur avec la ligne : {row.get('Établissement', 'N/A')} - {str(e)}")
 
             return JsonResponse({"message": "Importation réussie !"}, status=200)
 
         except Exception as e:
-            return JsonResponse({"error": f"Erreur lors de l'importation du fichier : {str(e)}"}, status=500)
-    else:
-        return JsonResponse({"error": "Aucun fichier CSV fourni."}, status=400)
+            return JsonResponse({"error": f"Erreur lors de la lecture du fichier : {str(e)}"}, status=500)
+
+    return JsonResponse({"error": "Aucun fichier CSV fourni."}, status=400)
 
     
