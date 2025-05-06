@@ -81,12 +81,12 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
@@ -173,11 +173,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# import dj_database_url
-# DATABASES = {
-#     'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
-# }
+import dj_database_url
+DATABASES = {
+    'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
+}
 
-# DEBUG = os.environ.get("DEBUG", "False") == "True"
-# SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-key-for-dev")
-# #new configs to deploy on Render
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-key-for-dev")
+#new configs to deploy on Render
