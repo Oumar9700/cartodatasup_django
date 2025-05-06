@@ -3,7 +3,7 @@ from django.db import models
 # Create your models here.
 class Institution(models.Model):
     uai_code = models.CharField(max_length=10, unique=True)
-    name = models.CharField(max_length=255)
+    name = models.TextField()
     department_code = models.CharField(max_length=5)
     department_name = models.CharField(max_length=100)
     region = models.CharField(max_length=100)
@@ -17,9 +17,9 @@ class Institution(models.Model):
 
 class Formation(models.Model):
     institution = models.ForeignKey(Institution, on_delete=models.CASCADE, related_name="formations")
-    name = models.CharField(max_length=255)
-    category = models.CharField(max_length=255)
-    detailed_category = models.CharField(max_length=255)
+    name = models.TextField()
+    category = models.TextField()
+    detailed_category = models.TextField()
     is_selective = models.BooleanField(default=False)
     gps_coordinates = models.CharField(max_length=50, null=True, blank=True)
     capacity = models.IntegerField()
